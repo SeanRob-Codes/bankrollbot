@@ -252,6 +252,3 @@ function AnalysisBlock({ icon, title, text, highlight }: { icon: string; title: 
     </div>
   );
 }
-function FormLabel({ children }: { children: React.ReactNode }) {
-  return <label className="block font-mono text-[10px] text-text-dim uppercase tracking-[0.1em] mb-1">{children}</label>;
-}
