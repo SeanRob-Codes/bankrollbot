@@ -50,8 +50,8 @@ export function SocialScreen() {
     if (!postsData) { setLoading(false); return; }
 
     const userIds = [...new Set(postsData.map(p => p.user_id))];
-    const { data: profiles } = await supabase.from('profiles').select('id, username, avatar_url, bet_score').in('id', userIds);
-    const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+    const { data: profiles } = await supabase.from('profiles_public' as any).select('id, username, avatar_url, bet_score').in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     const postIds = postsData.map(p => p.id);
     const { data: reactions } = await supabase.from('post_reactions').select('*').in('post_id', postIds);
@@ -80,7 +80,7 @@ export function SocialScreen() {
   };
 
   const loadLeaderboard = async () => {
-    const { data } = await supabase.from('profiles').select('id, username, avatar_url, bet_score').order('bet_score', { ascending: false }).limit(10);
+    const { data } = await supabase.from('profiles_public' as any).select('id, username, avatar_url, bet_score').order('bet_score', { ascending: false }).limit(10);
     if (data) setLeaderboard(data);
   };
 
@@ -144,12 +144,12 @@ export function SocialScreen() {
         copier_user_id: user.id,
         copier_bet_id: newBet.id,
       });
-      await supabase.from('notifications').insert({
-        user_id: post.user_id,
-        type: 'bet_copied',
-        title: 'Someone used your pick!',
-        message: `${profile?.username || 'A user'} copied your bet on ${post.bet.market}`,
-        related_post_id: post.id,
+      await supabase.rpc('create_notification', {
+        _target_user_id: post.user_id,
+        _type: 'bet_copied',
+        _title: 'Someone used your pick!',
+        _message: `${profile?.username || 'A user'} copied your bet on ${post.bet.market}`,
+        _related_post_id: post.id,
       });
       toast.success('Bet copied to your log!');
     }
@@ -159,9 +159,9 @@ export function SocialScreen() {
     const { data } = await supabase.from('post_comments').select('*').eq('post_id', postId).order('created_at', { ascending: true });
     if (!data) return;
     const uids = [...new Set(data.map(c => c.user_id))];
-    const { data: profs } = await supabase.from('profiles').select('id, username, avatar_url').in('id', uids);
-    const pm = new Map((profs || []).map(p => [p.id, p]));
-    setComments(prev => ({ ...prev, [postId]: data.map(c => ({ ...c, profile: pm.get(c.user_id) })) }));
+    const { data: profs } = await supabase.from('profiles_public' as any).select('id, username, avatar_url').in('id', uids);
+    const pm = new Map((profs || []).map((p: any) => [p.id, p]));
+    setComments(prev => ({ ...prev, [postId]: data.map(c => ({ ...c, profile: pm.get(c.user_id) })) as Comment[] }));
   };
 
   const toggleComments = (postId: string) => {
@@ -178,12 +178,12 @@ export function SocialScreen() {
     await supabase.from('post_comments').insert({ post_id: postId, user_id: user.id, content: commentText.trim() });
     const post = posts.find(p => p.id === postId);
     if (post && post.user_id !== user.id) {
-      await supabase.from('notifications').insert({
-        user_id: post.user_id,
-        type: 'comment',
-        title: 'New comment on your pick',
-        message: `${profile?.username || 'Someone'}: "${commentText.trim().slice(0, 50)}"`,
-        related_post_id: postId,
+      await supabase.rpc('create_notification', {
+        _target_user_id: post.user_id,
+        _type: 'comment',
+        _title: 'New comment on your pick',
+        _message: `${profile?.username || 'Someone'}: "${commentText.trim().slice(0, 50)}"`,
+        _related_post_id: postId,
       });
     }
     setCommentText('');
