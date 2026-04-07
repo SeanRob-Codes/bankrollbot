@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Loader2, Tv, MapPin, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useMultiDaySchedule, useInjuries, type ScheduleGame } from '@/hooks/useSportsData';
@@ -24,6 +24,14 @@ export function ScheduleBoard({ onSelectGame }: Props) {
 
   const { games, loading, refresh } = useMultiDaySchedule(league, startDate, 14);
   const { injuries, loading: injuriesLoading } = useInjuries(league);
+
+  // Auto-refresh live scores every 30 seconds
+  useEffect(() => {
+    const hasLive = games.some(g => g.statusState === 'in');
+    if (!hasLive) return;
+    const interval = setInterval(refresh, 30000);
+    return () => clearInterval(interval);
+  }, [games, refresh]);
 
   // Group games by date
   const gamesByDate = useMemo(() => {

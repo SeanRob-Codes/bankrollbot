@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, XCircle, Target, Loader2 } from 'lucide-react';
 import { useAnalysis } from '@/hooks/useOdds';
 import { LEAGUES } from '@/lib/betting';
 import { OddsBoard } from '@/components/OddsBoard';
 import type { GameOdds } from '@/hooks/useOdds';
+import type { ScheduleGame } from '@/hooks/useSportsData';
 
 interface Props {
   onSendToLog: (data?: any) => void;
+  prefillGame?: ScheduleGame | null;
+  onPrefillConsumed?: () => void;
 }
 
-export function AnalyzerScreen({ onSendToLog }: Props) {
+export function AnalyzerScreen({ onSendToLog, prefillGame, onPrefillConsumed }: Props) {
   const [betText, setBetText] = useState('');
   const [odds, setOdds] = useState('');
   const [prob, setProb] = useState('');
@@ -18,6 +21,24 @@ export function AnalyzerScreen({ onSendToLog }: Props) {
   const [conf, setConf] = useState('medium');
   const [league, setLeague] = useState('NBA');
   const { analyze, result, loading, error, clear } = useAnalysis();
+
+  // Auto-fill from schedule game tap
+  useEffect(() => {
+    if (prefillGame) {
+      const away = prefillGame.teams.find(t => t.homeAway === 'away');
+      const home = prefillGame.teams.find(t => t.homeAway === 'home');
+      const matchup = `${away?.name || 'Away'} @ ${home?.name || 'Home'}`;
+      const lineInfo = prefillGame.line ? ` — ${prefillGame.line}` : '';
+      setBetText(`${matchup}${lineInfo}`);
+      // Try to extract odds from spread
+      if (prefillGame.spread) {
+        const spreadOdds = prefillGame.spread > 0 ? -110 : -110;
+        setOdds(spreadOdds.toString());
+        setProb('55');
+      }
+      onPrefillConsumed?.();
+    }
+  }, [prefillGame]);
 
   const handleGameSelect = (game: GameOdds, team: string, selectedOdds: number, market: string) => {
     setBetText(`${game.awayTeam} @ ${game.homeTeam} — ${market}`);
