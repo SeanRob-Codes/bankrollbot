@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Loader2, Tv, MapPin, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useMultiDaySchedule, useInjuries, type ScheduleGame } from '@/hooks/useSportsData';
