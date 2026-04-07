@@ -3,23 +3,23 @@ import { BottomNav, type TabId } from '@/components/BottomNav';
 import { StatStrip } from '@/components/StatStrip';
 import { HomeScreen } from '@/components/screens/HomeScreen';
 import { AnalyzerScreen } from '@/components/screens/AnalyzerScreen';
-import { PlannerScreen } from '@/components/screens/PlannerScreen';
 import { ProfileScreen } from '@/components/screens/ProfileScreen';
 import { SocialScreen } from '@/components/screens/SocialScreen';
 import { PremiumScreen } from '@/components/screens/PremiumScreen';
 import { AuthScreen } from '@/components/screens/AuthScreen';
 import { OnboardingScreen } from '@/components/screens/OnboardingScreen';
 import { ScheduleBoard } from '@/components/ScheduleBoard';
+import { GuideScreen } from '@/components/screens/GuideScreen';
+import { SportsHubScreen } from '@/components/screens/SportsHubScreen';
 import { useAuth } from '@/hooks/useAuth';
-import { useBettingState } from '@/hooks/useBettingState';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
   const { user, profile, loading: authLoading } = useAuth();
-  const { state, updateGuardrails } = useBettingState();
   const [tab, setTab] = useState<TabId>('home');
   const [showPremium, setShowPremium] = useState(false);
   const [prefillGame, setPrefillGame] = useState<any>(null);
+  const [showSportsHub, setShowSportsHub] = useState(false);
 
   const handleScheduleGameSelect = (game: any) => {
     setPrefillGame(game);
@@ -71,6 +71,12 @@ const Index = () => {
             {profile?.is_premium && (
               <span className="font-mono text-[9px] px-2 py-0.5 rounded-full gradient-premium text-primary-foreground">PRO</span>
             )}
+            <button
+              onClick={() => setShowSportsHub(!showSportsHub)}
+              className={`font-mono text-[9px] px-2 py-1 rounded-full transition-all ${showSportsHub ? 'gradient-primary text-primary-foreground' : 'bg-surface border border-border text-text-dim hover:text-foreground'}`}
+            >
+              Hub
+            </button>
             <div className="w-8 h-8 rounded-full overflow-hidden border border-green/30 cursor-pointer" onClick={() => setTab('profile')}>
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} className="w-full h-full object-cover" />
@@ -87,14 +93,21 @@ const Index = () => {
       <StatStrip bankroll={profile?.bankroll || 0} unitSize={profile?.unit_size || 25} bets={[]} />
 
       <div className="px-5 pb-24">
-        {tab === 'home' && <HomeScreen onGoToAnalyzer={() => setTab('analyzer')} />}
-        {tab === 'schedule' && <ScheduleBoard onSelectGame={handleScheduleGameSelect} />}
-        {tab === 'analyzer' && <AnalyzerScreen onSendToLog={() => setTab('home')} prefillGame={prefillGame} onPrefillConsumed={() => setPrefillGame(null)} />}
-        {tab === 'profile' && <ProfileScreen onUpgrade={() => setShowPremium(true)} />}
-        {tab === 'social' && <SocialScreen />}
+        {showSportsHub ? (
+          <SportsHubScreen />
+        ) : (
+          <>
+            {tab === 'home' && <HomeScreen onGoToAnalyzer={() => setTab('analyzer')} />}
+            {tab === 'schedule' && <ScheduleBoard onSelectGame={handleScheduleGameSelect} />}
+            {tab === 'analyzer' && <AnalyzerScreen onSendToLog={() => setTab('home')} prefillGame={prefillGame} onPrefillConsumed={() => setPrefillGame(null)} />}
+            {tab === 'profile' && <ProfileScreen onUpgrade={() => setShowPremium(true)} />}
+            {tab === 'social' && <SocialScreen />}
+            {tab === 'guide' && <GuideScreen />}
+          </>
+        )}
       </div>
 
-      <BottomNav active={tab} onChange={setTab} />
+      <BottomNav active={tab} onChange={(id) => { setShowSportsHub(false); setTab(id); }} />
     </Shell>
   );
 };
