@@ -5,7 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ESPN public API endpoints (no key needed)
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports";
 
 const SPORT_MAP: Record<string, { sport: string; league: string }> = {
@@ -21,7 +20,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { league, type } = await req.json();
+    const { league, type, dates } = await req.json();
     const sportInfo = SPORT_MAP[league];
 
     if (!sportInfo) {
@@ -31,35 +30,61 @@ serve(async (req) => {
     }
 
     if (type === "schedule") {
-      const url = `${ESPN_BASE}/${sportInfo.sport}/${sportInfo.league}/scoreboard`;
-      const resp = await fetch(url);
-      const data = await resp.json();
+      // Support fetching multiple dates
+      // dates can be a single YYYYMMDD string or an array of them
+      const dateList: string[] = Array.isArray(dates) ? dates : dates ? [dates] : [];
+      
+      // If no dates provided, fetch today
+      if (dateList.length === 0) {
+        const today = new Date();
+        dateList.push(formatDate(today));
+      }
 
-      const games = (data.events || []).map((ev: any) => {
-        const comp = ev.competitions?.[0];
-        const teams = (comp?.competitors || []).map((c: any) => ({
-          name: c.team?.displayName || c.team?.name,
-          abbreviation: c.team?.abbreviation,
-          logo: c.team?.logo,
-          score: c.score,
-          homeAway: c.homeAway,
-          record: c.records?.[0]?.summary,
-        }));
+      const allGames: any[] = [];
 
-        return {
-          id: ev.id,
-          name: ev.name,
-          date: ev.date,
-          status: comp?.status?.type?.description || 'Scheduled',
-          period: comp?.status?.period,
-          clock: comp?.status?.displayClock,
-          teams,
-          venue: comp?.venue?.fullName,
-          broadcast: comp?.broadcasts?.[0]?.names?.[0],
-        };
-      });
+      for (const dateStr of dateList) {
+        const url = `${ESPN_BASE}/${sportInfo.sport}/${sportInfo.league}/scoreboard?dates=${dateStr}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
 
-      return new Response(JSON.stringify({ games, source: "espn" }), {
+        const games = (data.events || []).map((ev: any) => {
+          const comp = ev.competitions?.[0];
+          const teams = (comp?.competitors || []).map((c: any) => ({
+            name: c.team?.displayName || c.team?.name,
+            abbreviation: c.team?.abbreviation,
+            logo: c.team?.logo,
+            score: c.score,
+            homeAway: c.homeAway,
+            record: c.records?.[0]?.summary,
+          }));
+
+          // Extract odds/lines from ESPN data
+          const oddsData = comp?.odds?.[0];
+          const line = oddsData?.details || null;
+          const overUnder = oddsData?.overUnder || null;
+          const spread = oddsData?.spread || null;
+
+          return {
+            id: ev.id,
+            name: ev.name,
+            date: ev.date,
+            status: comp?.status?.type?.description || 'Scheduled',
+            statusState: comp?.status?.type?.state || 'pre',
+            period: comp?.status?.period,
+            clock: comp?.status?.displayClock,
+            teams,
+            venue: comp?.venue?.fullName,
+            broadcast: comp?.broadcasts?.[0]?.names?.join(', '),
+            line,
+            overUnder,
+            spread,
+          };
+        });
+
+        allGames.push(...games);
+      }
+
+      return new Response(JSON.stringify({ games: allGames, source: "espn" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -120,3 +145,10 @@ serve(async (req) => {
     });
   }
 });
+
+function formatDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}${m}${day}`;
+}
