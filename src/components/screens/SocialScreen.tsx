@@ -160,8 +160,8 @@ export function SocialScreen() {
     if (!data) return;
     const uids = [...new Set(data.map(c => c.user_id))];
     const { data: profs } = await supabase.from('profiles_public' as any).select('id, username, avatar_url').in('id', uids);
-    const pm = new Map((profs || []).map(p => [p.id, p]));
-    setComments(prev => ({ ...prev, [postId]: data.map(c => ({ ...c, profile: pm.get(c.user_id) })) }));
+    const pm = new Map((profs || []).map((p: any) => [p.id, p]));
+    setComments(prev => ({ ...prev, [postId]: data.map(c => ({ ...c, profile: pm.get(c.user_id) })) as Comment[] }));
   };
 
   const toggleComments = (postId: string) => {
