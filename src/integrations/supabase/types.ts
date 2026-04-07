@@ -279,7 +279,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          avatar_url: string | null
+          bet_score: number | null
+          id: string | null
+          is_premium: boolean | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bet_score?: number | null
+          id?: string | null
+          is_premium?: boolean | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bet_score?: number | null
+          id?: string | null
+          is_premium?: boolean | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_notification: {
