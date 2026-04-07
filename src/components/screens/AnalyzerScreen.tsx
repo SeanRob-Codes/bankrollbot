@@ -241,3 +241,17 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function FormLabel({ children }: { children: React.ReactNode }) {
   return <label className="block font-mono text-[10px] text-text-dim uppercase tracking-[0.1em] mb-1">{children}</label>;
 }
+
+function AnalysisBlock({ icon, title, text, highlight }: { icon: string; title: string; text: string; highlight?: boolean }) {
+  return (
+    <div className={`${highlight ? 'bg-surface border border-primary/10' : 'bg-surface border border-border'} rounded-lg p-3`}>
+      <div className={`font-mono text-[9px] ${highlight ? 'text-green' : 'text-text-dim'} uppercase tracking-wider mb-1.5 flex items-center gap-1`}>
+        <span>{icon}</span> {title}
+      </div>
+      <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
+    </div>
+  );
+}
+function FormLabel({ children }: { children: React.ReactNode }) {
+  return <label className="block font-mono text-[10px] text-text-dim uppercase tracking-[0.1em] mb-1">{children}</label>;
+}
