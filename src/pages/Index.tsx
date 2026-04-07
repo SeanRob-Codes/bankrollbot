@@ -63,7 +63,7 @@ const Index = () => {
 
       {/* Content */}
       <div className="px-5 pb-24">
-        {tab === 'home' && <HomeScreen bets={state.bets} onAddBet={addBet} onMarkBet={markBet} />}
+        {tab === 'home' && <HomeScreen bets={state.bets} onAddBet={addBet} onMarkBet={markBet} onGoToAnalyzer={() => setTab('analyzer')} />}
         {tab === 'analyzer' && <AnalyzerScreen onSendToLog={addBet} />}
         {tab === 'planner' && <PlannerScreen guardrails={state.guardrails} onUpdate={updateGuardrails} />}
         {tab === 'profile' && <ProfileScreen state={state} onUpdate={updateProfile} onReset={resetAll} onUpgrade={() => setShowPremium(true)} />}
