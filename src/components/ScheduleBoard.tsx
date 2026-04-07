@@ -25,6 +25,14 @@ export function ScheduleBoard({ onSelectGame }: Props) {
   const { games, loading, refresh } = useMultiDaySchedule(league, startDate, 14);
   const { injuries, loading: injuriesLoading } = useInjuries(league);
 
+  // Auto-refresh live scores every 30 seconds
+  useEffect(() => {
+    const hasLive = games.some(g => g.statusState === 'in');
+    if (!hasLive) return;
+    const interval = setInterval(refresh, 30000);
+    return () => clearInterval(interval);
+  }, [games, refresh]);
+
   // Group games by date
   const gamesByDate = useMemo(() => {
     const grouped: Record<string, ScheduleGame[]> = {};
