@@ -17,6 +17,7 @@ const PLANS = {
     price: '$9.99',
     period: '/mo',
     popular: false,
+    save: '',
   },
   annual: {
     priceId: 'price_1TJbsdQxOeP7HEjBm7CvsfXL',
