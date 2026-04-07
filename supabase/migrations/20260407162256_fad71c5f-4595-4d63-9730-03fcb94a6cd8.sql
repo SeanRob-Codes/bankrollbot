@@ -1,0 +1,1 @@
+DROP POLICY "Public profiles readable" ON public.profiles;
