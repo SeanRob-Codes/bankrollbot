@@ -19,6 +19,12 @@ const Index = () => {
   const { state, updateGuardrails } = useBettingState();
   const [tab, setTab] = useState<TabId>('home');
   const [showPremium, setShowPremium] = useState(false);
+  const [prefillGame, setPrefillGame] = useState<any>(null);
+
+  const handleScheduleGameSelect = (game: any) => {
+    setPrefillGame(game);
+    setTab('analyzer');
+  };
 
   if (authLoading) {
     return (
