@@ -178,12 +178,12 @@ export function SocialScreen() {
     await supabase.from('post_comments').insert({ post_id: postId, user_id: user.id, content: commentText.trim() });
     const post = posts.find(p => p.id === postId);
     if (post && post.user_id !== user.id) {
-      await supabase.from('notifications').insert({
-        user_id: post.user_id,
-        type: 'comment',
-        title: 'New comment on your pick',
-        message: `${profile?.username || 'Someone'}: "${commentText.trim().slice(0, 50)}"`,
-        related_post_id: postId,
+      await supabase.rpc('create_notification', {
+        _target_user_id: post.user_id,
+        _type: 'comment',
+        _title: 'New comment on your pick',
+        _message: `${profile?.username || 'Someone'}: "${commentText.trim().slice(0, 50)}"`,
+        _related_post_id: postId,
       });
     }
     setCommentText('');
