@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, Zap } from 'lucide-react';
 import { LEAGUES, type Bet } from '@/lib/betting';
 import { BetList } from '@/components/BetList';
 import { PerfChart } from '@/components/PerfChart';
+import { OddsBoard } from '@/components/OddsBoard';
+import type { GameOdds } from '@/hooks/useOdds';
 
 interface Props {
   bets: Bet[];
   onAddBet: (bet: Omit<Bet, 'id' | 'createdAt' | 'result'>) => void;
   onMarkBet: (id: string, result: 'win' | 'loss') => void;
+  onGoToAnalyzer: () => void;
 }
 
-export function HomeScreen({ bets, onAddBet, onMarkBet }: Props) {
+export function HomeScreen({ bets, onAddBet, onMarkBet, onGoToAnalyzer }: Props) {
   const [league, setLeague] = useState('NBA');
   const [match, setMatch] = useState('');
   const [market, setMarket] = useState('');
@@ -33,15 +36,31 @@ export function HomeScreen({ bets, onAddBet, onMarkBet }: Props) {
     setUnits('');
   };
 
+  const handleGameSelect = (game: GameOdds, team: string, selectedOdds: number, marketStr: string) => {
+    setMatch(`${game.awayTeam} @ ${game.homeTeam}`);
+    setMarket(marketStr);
+    setOdds(selectedOdds.toString());
+    setLeague(league);
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-      <SectionLabel>Performance chart</SectionLabel>
+      <SectionLabel>Performance</SectionLabel>
       <div className="bg-surface border border-border rounded-lg p-4 relative overflow-hidden">
         <div className="absolute top-[-30px] right-[-30px] w-[120px] h-[120px] bg-[radial-gradient(circle,hsl(var(--green)/0.07),transparent_70%)] pointer-events-none" />
         <PerfChart bets={bets} />
       </div>
 
-      <SectionLabel>Log a bet</SectionLabel>
+      {/* Quick odds tap */}
+      <div className="flex items-center justify-between">
+        <SectionLabel>Today's lines</SectionLabel>
+        <button onClick={onGoToAnalyzer} className="font-mono text-[9px] text-accent uppercase tracking-wider flex items-center gap-1 hover:underline">
+          <Zap size={10} /> AI analyze
+        </button>
+      </div>
+      <OddsBoard onSelectGame={handleGameSelect} />
+
+      <SectionLabel>Quick log</SectionLabel>
       <div className="bg-surface border border-border rounded-lg p-4 space-y-3">
         <div className="grid grid-cols-2 gap-2.5">
           <div>
@@ -59,13 +78,15 @@ export function HomeScreen({ bets, onAddBet, onMarkBet }: Props) {
           <FormLabel>Match</FormLabel>
           <input value={match} onChange={e => setMatch(e.target.value)} placeholder="e.g. PHX @ DEN" className="w-full bg-card border border-border rounded-sm p-2.5 text-foreground font-body text-sm outline-none placeholder:text-text-dim focus:border-accent focus:ring-1 focus:ring-accent/20" />
         </div>
-        <div>
-          <FormLabel>Market / prop</FormLabel>
-          <input value={market} onChange={e => setMarket(e.target.value)} placeholder="e.g. Durant o29.5 pts" className="w-full bg-card border border-border rounded-sm p-2.5 text-foreground font-body text-sm outline-none placeholder:text-text-dim focus:border-accent focus:ring-1 focus:ring-accent/20" />
-        </div>
-        <div>
-          <FormLabel>Odds (American)</FormLabel>
-          <input value={odds} onChange={e => setOdds(e.target.value)} type="number" placeholder="-110" className="w-full bg-card border border-border rounded-sm p-2.5 text-foreground font-body text-sm outline-none placeholder:text-text-dim focus:border-accent focus:ring-1 focus:ring-accent/20" />
+        <div className="grid grid-cols-2 gap-2.5">
+          <div>
+            <FormLabel>Market / prop</FormLabel>
+            <input value={market} onChange={e => setMarket(e.target.value)} placeholder="e.g. Durant o29.5" className="w-full bg-card border border-border rounded-sm p-2.5 text-foreground font-body text-sm outline-none placeholder:text-text-dim focus:border-accent focus:ring-1 focus:ring-accent/20" />
+          </div>
+          <div>
+            <FormLabel>Odds</FormLabel>
+            <input value={odds} onChange={e => setOdds(e.target.value)} type="number" placeholder="-110" className="w-full bg-card border border-border rounded-sm p-2.5 text-foreground font-body text-sm outline-none placeholder:text-text-dim focus:border-accent focus:ring-1 focus:ring-accent/20" />
+          </div>
         </div>
         <button onClick={handleSubmit} className="w-full gradient-primary text-primary-foreground font-display font-bold text-sm py-3 rounded-full glow-green hover:shadow-[var(--glow-green-lg)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2">
           <Plus size={16} /> Log bet
