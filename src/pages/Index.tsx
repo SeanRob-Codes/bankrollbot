@@ -88,8 +88,8 @@ const Index = () => {
 
       <div className="px-5 pb-24">
         {tab === 'home' && <HomeScreen onGoToAnalyzer={() => setTab('analyzer')} />}
-        {tab === 'schedule' && <ScheduleBoard />}
-        {tab === 'analyzer' && <AnalyzerScreen onSendToLog={() => setTab('home')} />}
+        {tab === 'schedule' && <ScheduleBoard onSelectGame={handleScheduleGameSelect} />}
+        {tab === 'analyzer' && <AnalyzerScreen onSendToLog={() => setTab('home')} prefillGame={prefillGame} onPrefillConsumed={() => setPrefillGame(null)} />}
         {tab === 'profile' && <ProfileScreen onUpgrade={() => setShowPremium(true)} />}
         {tab === 'social' && <SocialScreen />}
       </div>
