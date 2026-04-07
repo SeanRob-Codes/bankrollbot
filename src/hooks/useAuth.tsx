@@ -14,16 +14,24 @@ interface Profile {
   onboarded: boolean;
 }
 
+interface SubscriptionState {
+  subscribed: boolean;
+  product_id: string | null;
+  subscription_end: string | null;
+}
+
 interface AuthCtx {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  subscription: SubscriptionState | null;
   loading: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
   uploadAvatar: (file: File) => Promise<string | null>;
 }
@@ -34,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionState | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
@@ -41,14 +50,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data) setProfile(data as Profile);
   }, []);
 
+  const checkSubscription = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      if (error) {
+        console.error('Subscription check error:', error);
+        return;
+      }
+      if (data) {
+        setSubscription(data as SubscriptionState);
+        // Also refresh profile since check-subscription syncs is_premium
+        if (user) await fetchProfile(user.id);
+      }
+    } catch (err) {
+      console.error('Subscription check failed:', err);
+    }
+  }, [user, fetchProfile]);
+
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, sess) => {
+    const { data: { subscription: sub } } = supabase.auth.onAuthStateChange(async (_event, sess) => {
       setSession(sess);
       setUser(sess?.user ?? null);
       if (sess?.user) {
         setTimeout(() => fetchProfile(sess.user.id), 0);
       } else {
         setProfile(null);
+        setSubscription(null);
       }
       setLoading(false);
     });
@@ -60,8 +87,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => sub.unsubscribe();
   }, [fetchProfile]);
+
+  // Check subscription on login and periodically
+  useEffect(() => {
+    if (!user) return;
+    checkSubscription();
+    const interval = setInterval(checkSubscription, 60000);
+    return () => clearInterval(interval);
+  }, [user, checkSubscription]);
+
+  // Check on checkout return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success' && user) {
+      setTimeout(checkSubscription, 2000);
+      window.history.replaceState({}, '', '/');
+    }
+  }, [user, checkSubscription]);
 
   const signUp = async (email: string, password: string, name: string) => {
     const { error } = await supabase.auth.signUp({
@@ -92,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setSubscription(null);
   };
 
   const refreshProfile = async () => {
@@ -117,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signInWithGoogle, signOut, refreshProfile, updateProfile, uploadAvatar }}>
+    <AuthContext.Provider value={{ user, session, profile, subscription, loading, signUp, signIn, signInWithGoogle, signOut, refreshProfile, refreshSubscription: checkSubscription, updateProfile, uploadAvatar }}>
       {children}
     </AuthContext.Provider>
   );
