@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ScheduleGame {
@@ -6,6 +6,7 @@ export interface ScheduleGame {
   name: string;
   date: string;
   status: string;
+  statusState: string;
   period?: number;
   clock?: string;
   teams: {
@@ -18,6 +19,9 @@ export interface ScheduleGame {
   }[];
   venue?: string;
   broadcast?: string;
+  line?: string;
+  overUnder?: number;
+  spread?: number;
 }
 
 export interface Injury {
@@ -39,15 +43,22 @@ export interface Team {
   color?: string;
 }
 
-export function useSchedule(league: string) {
+function formatDateParam(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}${m}${day}`;
+}
+
+export function useSchedule(league: string, dates?: string[]) {
   const [games, setGames] = useState<ScheduleGame[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetch_ = async () => {
+  const fetchSchedule = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await supabase.functions.invoke('fetch-sports-data', {
-        body: { league, type: 'schedule' },
+        body: { league, type: 'schedule', dates: dates || [formatDateParam(new Date())] },
       });
       setGames(data?.games || []);
     } catch (e) {
@@ -55,11 +66,27 @@ export function useSchedule(league: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [league, dates?.join(',')]);
 
-  useEffect(() => { fetch_(); }, [league]);
+  useEffect(() => { fetchSchedule(); }, [fetchSchedule]);
 
-  return { games, loading, refresh: fetch_ };
+  return { games, loading, refresh: fetchSchedule };
+}
+
+export function useMultiDaySchedule(league: string, centerDate: Date, rangeDays: number = 7) {
+  const [dates, setDates] = useState<string[]>([]);
+
+  useEffect(() => {
+    const d: string[] = [];
+    for (let i = 0; i < rangeDays; i++) {
+      const date = new Date(centerDate);
+      date.setDate(date.getDate() + i);
+      d.push(formatDateParam(date));
+    }
+    setDates(d);
+  }, [centerDate.toISOString(), rangeDays]);
+
+  return useSchedule(league, dates);
 }
 
 export function useInjuries(league: string) {
