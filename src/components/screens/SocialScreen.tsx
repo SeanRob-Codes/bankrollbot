@@ -50,8 +50,8 @@ export function SocialScreen() {
     if (!postsData) { setLoading(false); return; }
 
     const userIds = [...new Set(postsData.map(p => p.user_id))];
-    const { data: profiles } = await supabase.from('profiles').select('id, username, avatar_url, bet_score').in('id', userIds);
-    const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+    const { data: profiles } = await supabase.from('profiles_public' as any).select('id, username, avatar_url, bet_score').in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     const postIds = postsData.map(p => p.id);
     const { data: reactions } = await supabase.from('post_reactions').select('*').in('post_id', postIds);
