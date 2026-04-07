@@ -7,7 +7,7 @@ import { OddsBoard } from '@/components/OddsBoard';
 import type { GameOdds } from '@/hooks/useOdds';
 
 interface Props {
-  onSendToLog: (data: { league: string; match: string; market: string; odds: number; units: number }) => void;
+  onSendToLog: (data?: any) => void;
 }
 
 export function AnalyzerScreen({ onSendToLog }: Props) {
