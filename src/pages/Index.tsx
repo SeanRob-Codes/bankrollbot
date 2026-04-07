@@ -9,6 +9,7 @@ import { SocialScreen } from '@/components/screens/SocialScreen';
 import { PremiumScreen } from '@/components/screens/PremiumScreen';
 import { AuthScreen } from '@/components/screens/AuthScreen';
 import { OnboardingScreen } from '@/components/screens/OnboardingScreen';
+import { ScheduleBoard } from '@/components/ScheduleBoard';
 import { useAuth } from '@/hooks/useAuth';
 import { useBettingState } from '@/hooks/useBettingState';
 import { Loader2 } from 'lucide-react';
@@ -19,7 +20,6 @@ const Index = () => {
   const [tab, setTab] = useState<TabId>('home');
   const [showPremium, setShowPremium] = useState(false);
 
-  // Loading state
   if (authLoading) {
     return (
       <Shell>
@@ -30,12 +30,10 @@ const Index = () => {
     );
   }
 
-  // Not logged in
   if (!user) {
     return <AuthScreen />;
   }
 
-  // Onboarding - need to set bankroll
   if (profile && !profile.onboarded) {
     return <OnboardingScreen />;
   }
@@ -80,14 +78,12 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Stats */}
       <StatStrip bankroll={profile?.bankroll || 0} unitSize={profile?.unit_size || 25} bets={[]} />
 
-      {/* Content */}
       <div className="px-5 pb-24">
         {tab === 'home' && <HomeScreen onGoToAnalyzer={() => setTab('analyzer')} />}
+        {tab === 'schedule' && <ScheduleBoard />}
         {tab === 'analyzer' && <AnalyzerScreen onSendToLog={() => setTab('home')} />}
-        {tab === 'planner' && <PlannerScreen guardrails={state.guardrails} onUpdate={updateGuardrails} />}
         {tab === 'profile' && <ProfileScreen onUpgrade={() => setShowPremium(true)} />}
         {tab === 'social' && <SocialScreen />}
       </div>

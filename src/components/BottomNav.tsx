@@ -1,11 +1,11 @@
-import { BarChart3, Brain, Clock, User, Users } from 'lucide-react';
+import { BarChart3, Brain, Calendar, User, Users } from 'lucide-react';
 
 const tabs = [
   { id: 'home', label: 'Home', icon: BarChart3 },
+  { id: 'schedule', label: 'Games', icon: Calendar },
   { id: 'analyzer', label: 'AI', icon: Brain },
-  { id: 'planner', label: 'Plan', icon: Clock },
-  { id: 'profile', label: 'Profile', icon: User },
   { id: 'social', label: 'Social', icon: Users },
+  { id: 'profile', label: 'Profile', icon: User },
 ] as const;
 
 export type TabId = typeof tabs[number]['id'];
