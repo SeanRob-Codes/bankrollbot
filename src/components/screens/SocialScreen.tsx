@@ -144,12 +144,12 @@ export function SocialScreen() {
         copier_user_id: user.id,
         copier_bet_id: newBet.id,
       });
-      await supabase.from('notifications').insert({
-        user_id: post.user_id,
-        type: 'bet_copied',
-        title: 'Someone used your pick!',
-        message: `${profile?.username || 'A user'} copied your bet on ${post.bet.market}`,
-        related_post_id: post.id,
+      await supabase.rpc('create_notification', {
+        _target_user_id: post.user_id,
+        _type: 'bet_copied',
+        _title: 'Someone used your pick!',
+        _message: `${profile?.username || 'A user'} copied your bet on ${post.bet.market}`,
+        _related_post_id: post.id,
       });
       toast.success('Bet copied to your log!');
     }
