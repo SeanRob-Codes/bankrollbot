@@ -80,7 +80,7 @@ export function SocialScreen() {
   };
 
   const loadLeaderboard = async () => {
-    const { data } = await supabase.from('profiles').select('id, username, avatar_url, bet_score').order('bet_score', { ascending: false }).limit(10);
+    const { data } = await supabase.from('profiles_public' as any).select('id, username, avatar_url, bet_score').order('bet_score', { ascending: false }).limit(10);
     if (data) setLeaderboard(data);
   };
 
