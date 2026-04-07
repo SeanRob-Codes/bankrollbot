@@ -1,114 +1,171 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Trash2, Crown } from 'lucide-react';
-import { calcStats, initials, type Bet, type AppState } from '@/lib/betting';
+import { Camera, TrendingUp, Crown, LogOut, Bell } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { calcStats } from '@/lib/betting';
+import { toast } from 'sonner';
+import { useEffect } from 'react';
 
 interface Props {
-  state: AppState;
-  onUpdate: (data: Partial<AppState>) => void;
-  onReset: () => void;
   onUpgrade: () => void;
 }
 
-export function ProfileScreen({ state, onUpdate, onReset, onUpgrade }: Props) {
-  const [name, setName] = useState(state.username);
-  const [bankroll, setBankroll] = useState(state.bankroll.toString());
-  const [unitSize, setUnitSize] = useState(state.unitSize.toString());
-  const [risk, setRisk] = useState(state.riskMode);
-  const stats = calcStats(state.bets);
+export function ProfileScreen({ onUpgrade }: Props) {
+  const { profile, user, updateProfile, uploadAvatar, signOut } = useAuth();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [username, setUsername] = useState(profile?.username || '');
+  const [bankroll, setBankroll] = useState(profile?.bankroll?.toString() || '');
+  const [unitSize, setUnitSize] = useState(profile?.unit_size?.toString() || '');
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [bets, setBets] = useState<any[]>([]);
 
-  const save = () => {
-    onUpdate({
-      username: name,
-      bankroll: parseFloat(bankroll) || 2500,
-      unitSize: parseFloat(unitSize) || 25,
-      riskMode: risk,
-    });
+  useEffect(() => {
+    if (user) {
+      supabase.from('bets').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).then(({ data }) => {
+        if (data) setBets(data);
+      });
+      supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20).then(({ data }) => {
+        if (data) setNotifications(data);
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (profile) {
+      setUsername(profile.username || '');
+      setBankroll(profile.bankroll?.toString() || '');
+      setUnitSize(profile.unit_size?.toString() || '');
+    }
+  }, [profile]);
+
+  const stats = calcStats(bets.map(b => ({ ...b, odds: Number(b.odds), units: Number(b.units) })));
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await uploadAvatar(file);
+    if (url) toast.success('Avatar updated!');
   };
 
-  const healthPct = state.bankroll > 0 ? Math.min(100, Math.max(0, 50 + (stats.net * state.unitSize / state.bankroll) * 50)) : 50;
-  const wrPct = stats.hitRate !== null ? stats.hitRate : 0;
+  const save = async () => {
+    await updateProfile({
+      username: username.trim() || 'Bettor',
+      bankroll: parseFloat(bankroll) || 0,
+      unit_size: parseFloat(unitSize) || 25,
+    } as any);
+    toast.success('Profile saved!');
+  };
+
+  const markNotifsRead = async () => {
+    if (!user) return;
+    await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-      <div className="bg-surface border border-border rounded-lg p-4">
-        <div className="w-[52px] h-[52px] rounded-2xl gradient-primary flex items-center justify-center font-display text-xl font-extrabold text-primary-foreground mb-3" style={{ background: 'var(--gradient-avatar)' }}>
-          {initials(name)}
+      <div className="flex flex-col items-center py-4">
+        <div className="relative group cursor-pointer mb-3" onClick={() => fileRef.current?.click()}>
+          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-green/30 bg-surface">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center gradient-primary text-2xl font-display font-bold text-primary-foreground">
+                {(profile?.username || 'B')[0]?.toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div className="absolute inset-0 rounded-full bg-background/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Camera size={20} className="text-foreground" />
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
         </div>
-        <div className="font-display text-[22px] font-extrabold mb-1">{name || 'Your profile'}</div>
-        <div className="font-mono text-[11px] text-text-dim mb-4">Set up your bankroll and preferences</div>
-
-        <div className="h-px bg-border my-4" />
-
-        <div className="space-y-3">
-          <div>
-            <FormLabel>Name / alias</FormLabel>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Sean" className="w-full bg-card border border-border rounded-sm p-2.5 text-foreground text-sm outline-none placeholder:text-text-dim focus:border-accent focus:ring-1 focus:ring-accent/20" />
+        <div className="font-display text-lg font-extrabold">{profile?.username || 'Bettor'}</div>
+        <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-1 text-green font-mono text-sm">
+            <TrendingUp size={14} /> {profile?.bet_score || 0}
           </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            <div>
-              <FormLabel>Bankroll ($)</FormLabel>
-              <input value={bankroll} onChange={e => setBankroll(e.target.value)} type="number" placeholder="2500" className="w-full bg-card border border-border rounded-sm p-2.5 text-foreground text-sm outline-none placeholder:text-text-dim focus:border-accent focus:ring-1 focus:ring-accent/20" />
-            </div>
-            <div>
-              <FormLabel>Unit size ($)</FormLabel>
-              <input value={unitSize} onChange={e => setUnitSize(e.target.value)} type="number" placeholder="25" className="w-full bg-card border border-border rounded-sm p-2.5 text-foreground text-sm outline-none placeholder:text-text-dim focus:border-accent focus:ring-1 focus:ring-accent/20" />
-            </div>
-          </div>
-          <div>
-            <FormLabel>Risk mode</FormLabel>
-            <select value={risk} onChange={e => setRisk(e.target.value)} className="w-full bg-card border border-border rounded-sm p-2.5 text-foreground text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/20">
-              <option value="chill">Chill (0.25–0.5u stakes)</option>
-              <option value="standard">Standard (0.5–1u stakes)</option>
-              <option value="aggressive">Aggressive (1–2u stakes)</option>
-            </select>
-          </div>
-          <button onClick={save} className="w-full gradient-primary text-primary-foreground font-display font-bold text-sm py-3 rounded-full glow-green flex items-center justify-center gap-2">
-            <Save size={16} /> Save profile
-          </button>
+          {profile?.is_premium && (
+            <span className="font-mono text-[9px] px-2 py-0.5 rounded-full gradient-premium text-primary-foreground">PRO</span>
+          )}
         </div>
       </div>
 
-      <SectionLabel>Bankroll health</SectionLabel>
-      <div className="bg-surface border border-border rounded-lg p-4 space-y-3">
-        <BarGroup label="Bankroll vs start" value={healthPct > 50 ? 'Growing' : healthPct < 50 ? 'Declining' : 'Neutral'} pct={healthPct} />
-        <BarGroup label="Win rate (last 30)" value={stats.hitRate !== null ? `${stats.hitRate.toFixed(0)}%` : '–'} pct={wrPct} />
-        <div className="h-px bg-border my-3" />
-        <div className="flex gap-2 flex-wrap">
-          <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-green/40 text-green bg-green/5">Active bettor</span>
-          {state.bets.length > 10 && <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-accent/40 text-accent bg-accent/5">10+ bets</span>}
-        </div>
-      </div>
-
-      <button onClick={onUpgrade} className="w-full gradient-premium text-foreground font-display font-bold text-sm py-3 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-        <Crown size={16} /> Upgrade to Pro
-      </button>
-
-      <SectionLabel>Danger zone</SectionLabel>
-      <div className="bg-surface border border-border rounded-lg p-4">
-        <button onClick={onReset} className="bg-red/10 border border-red/30 text-red font-display font-bold text-xs px-4 py-2 rounded-full flex items-center gap-2 hover:bg-red/20 transition-colors">
-          <Trash2 size={14} /> Reset all data
+      <div className="flex items-center justify-between">
+        <SectionLabel>Notifications</SectionLabel>
+        <button onClick={() => { setShowNotifs(!showNotifs); if (!showNotifs) markNotifsRead(); }} className="relative">
+          <Bell size={18} className="text-text-dim hover:text-foreground transition-colors" />
+          {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red text-[9px] font-bold flex items-center justify-center text-primary-foreground">{unreadCount}</span>}
         </button>
       </div>
+
+      {showNotifs && (
+        <div className="bg-surface border border-border rounded-xl divide-y divide-border max-h-48 overflow-y-auto">
+          {notifications.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">No notifications yet</div>
+          ) : notifications.map(n => (
+            <div key={n.id} className={`p-3 ${!n.read ? 'bg-accent/5' : ''}`}>
+              <div className="font-display font-bold text-xs">{n.title}</div>
+              <div className="text-[11px] text-muted-foreground">{n.message}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <SectionLabel>Your stats</SectionLabel>
+      <div className="grid grid-cols-3 gap-2">
+        <StatCard label="Win rate" value={stats.hitRate ? `${stats.hitRate.toFixed(0)}%` : '—'} />
+        <StatCard label="Record" value={`${stats.wins}-${stats.losses}`} />
+        <StatCard label="Net units" value={`${stats.net >= 0 ? '+' : ''}${stats.net.toFixed(1)}u`} positive={stats.net >= 0} />
+      </div>
+
+      <SectionLabel>Settings</SectionLabel>
+      <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
+        <div>
+          <FormLabel>Username</FormLabel>
+          <input value={username} onChange={e => setUsername(e.target.value)} className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-foreground outline-none focus:border-accent" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <FormLabel>Bankroll ($)</FormLabel>
+            <input value={bankroll} onChange={e => setBankroll(e.target.value)} type="number" className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-foreground outline-none focus:border-accent" />
+          </div>
+          <div>
+            <FormLabel>Unit size ($)</FormLabel>
+            <input value={unitSize} onChange={e => setUnitSize(e.target.value)} type="number" className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-foreground outline-none focus:border-accent" />
+          </div>
+        </div>
+        <button onClick={save} className="w-full gradient-primary text-primary-foreground font-display font-bold text-sm py-3 rounded-full glow-green transition-all">Save profile</button>
+      </div>
+
+      {!profile?.is_premium && (
+        <button onClick={onUpgrade} className="w-full gradient-premium text-primary-foreground font-display font-bold text-sm py-3 rounded-full flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all">
+          <Crown size={16} /> Upgrade to Pro
+        </button>
+      )}
+
+      <button onClick={signOut} className="w-full bg-surface border border-border text-muted-foreground font-display font-bold text-sm py-3 rounded-full flex items-center justify-center gap-2 hover:border-red/30 hover:text-red transition-colors">
+        <LogOut size={16} /> Sign out
+      </button>
     </motion.div>
   );
 }
 
-function BarGroup({ label, value, pct }: { label: string; value: string; pct: number }) {
+function StatCard({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
   return (
-    <div>
-      <div className="flex justify-between font-mono text-[10px] text-text-dim mb-1.5">
-        <span>{label}</span><span>{value}</span>
-      </div>
-      <div className="h-1.5 rounded-full bg-card overflow-hidden">
-        <div className="h-full rounded-full gradient-primary transition-all duration-500" style={{ width: `${pct}%` }} />
-      </div>
+    <div className="bg-surface border border-border rounded-xl p-3 text-center">
+      <div className="font-mono text-[9px] text-text-dim uppercase tracking-wider mb-1">{label}</div>
+      <div className={`font-display font-extrabold text-lg ${positive === true ? 'text-green' : positive === false ? 'text-red' : ''}`}>{value}</div>
     </div>
   );
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <div className="font-mono text-[10px] text-text-dim uppercase tracking-[0.14em] mt-5 mb-2">{children}</div>;
+  return <div className="font-mono text-[10px] text-text-dim uppercase tracking-[0.14em] mt-5 mb-2 flex items-center">{children}</div>;
 }
 
 function FormLabel({ children }: { children: React.ReactNode }) {

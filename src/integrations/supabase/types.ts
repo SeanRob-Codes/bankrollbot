@@ -14,7 +14,269 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bet_copies: {
+        Row: {
+          copier_bet_id: string | null
+          copier_user_id: string
+          created_at: string
+          id: string
+          original_bet_id: string
+          original_user_id: string
+        }
+        Insert: {
+          copier_bet_id?: string | null
+          copier_user_id: string
+          created_at?: string
+          id?: string
+          original_bet_id: string
+          original_user_id: string
+        }
+        Update: {
+          copier_bet_id?: string | null
+          copier_user_id?: string
+          created_at?: string
+          id?: string
+          original_bet_id?: string
+          original_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bet_copies_copier_bet_id_fkey"
+            columns: ["copier_bet_id"]
+            isOneToOne: false
+            referencedRelation: "bets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bet_copies_original_bet_id_fkey"
+            columns: ["original_bet_id"]
+            isOneToOne: false
+            referencedRelation: "bets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bets: {
+        Row: {
+          analysis: Json | null
+          created_at: string
+          id: string
+          league: string
+          market: string
+          match: string
+          odds: number
+          result: string
+          units: number
+          user_id: string
+        }
+        Insert: {
+          analysis?: Json | null
+          created_at?: string
+          id?: string
+          league: string
+          market: string
+          match: string
+          odds: number
+          result?: string
+          units?: number
+          user_id: string
+        }
+        Update: {
+          analysis?: Json | null
+          created_at?: string
+          id?: string
+          league?: string
+          market?: string
+          match?: string
+          odds?: number
+          result?: string
+          units?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          related_post_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          related_post_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          related_post_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_related_post_id_fkey"
+            columns: ["related_post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bankroll: number
+          bet_score: number
+          created_at: string
+          id: string
+          is_premium: boolean
+          onboarded: boolean
+          risk_mode: string
+          stripe_customer_id: string | null
+          unit_size: number
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bankroll?: number
+          bet_score?: number
+          created_at?: string
+          id: string
+          is_premium?: boolean
+          onboarded?: boolean
+          risk_mode?: string
+          stripe_customer_id?: string | null
+          unit_size?: number
+          updated_at?: string
+          username?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bankroll?: number
+          bet_score?: number
+          created_at?: string
+          id?: string
+          is_premium?: boolean
+          onboarded?: boolean
+          risk_mode?: string
+          stripe_customer_id?: string | null
+          unit_size?: number
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      social_posts: {
+        Row: {
+          bet_id: string | null
+          caption: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          bet_id?: string | null
+          caption?: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          bet_id?: string | null
+          caption?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_posts_bet_id_fkey"
+            columns: ["bet_id"]
+            isOneToOne: false
+            referencedRelation: "bets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

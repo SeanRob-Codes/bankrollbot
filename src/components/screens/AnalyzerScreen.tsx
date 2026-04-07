@@ -7,7 +7,7 @@ import { OddsBoard } from '@/components/OddsBoard';
 import type { GameOdds } from '@/hooks/useOdds';
 
 interface Props {
-  onSendToLog: (data: { league: string; match: string; market: string; odds: number; units: number }) => void;
+  onSendToLog: (data?: any) => void;
 }
 
 export function AnalyzerScreen({ onSendToLog }: Props) {
@@ -140,28 +140,52 @@ export function AnalyzerScreen({ onSendToLog }: Props) {
               </div>
 
               {/* AI Summary */}
-              <div className="bg-card border border-border rounded-sm p-3.5">
+              <div className="bg-card border border-border rounded-lg p-4 space-y-3">
                 <div className="font-mono text-[9px] text-accent uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Sparkles size={10} /> AI Analysis
+                  <Sparkles size={10} /> Deep AI Analysis
                 </div>
-                <p className="text-sm text-foreground leading-relaxed mb-3">{result.analysis.summary}</p>
+                <p className="text-sm text-foreground leading-relaxed">{result.analysis.summary}</p>
+
+                {/* Matchup breakdown */}
+                {(result.analysis as any).matchupBreakdown && (
+                  <AnalysisBlock icon="⚔️" title="Matchup breakdown" text={(result.analysis as any).matchupBreakdown} />
+                )}
 
                 {/* Sharp context */}
-                <div className="bg-surface border border-primary/10 rounded-sm p-3 mb-3">
-                  <div className="font-mono text-[9px] text-green uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <Target size={10} /> Sharp money context
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{result.analysis.sharpContext}</p>
-                </div>
+                <AnalysisBlock icon="🎯" title="Sharp money context" text={result.analysis.sharpContext} highlight />
+
+                {/* Injury impact */}
+                {(result.analysis as any).injuryImpact && (
+                  <AnalysisBlock icon="🏥" title="Injury impact" text={(result.analysis as any).injuryImpact} />
+                )}
+
+                {/* Situational angle */}
+                {(result.analysis as any).situationalAngle && (
+                  <AnalysisBlock icon="📅" title="Situational angle" text={(result.analysis as any).situationalAngle} />
+                )}
+
+                {/* Historical trend */}
+                {(result.analysis as any).historicalTrend && (
+                  <AnalysisBlock icon="📊" title="Historical trends" text={(result.analysis as any).historicalTrend} />
+                )}
 
                 {/* Key factors */}
                 {result.analysis.keyFactors?.length > 0 && (
-                  <div className="space-y-1.5 mb-3">
+                  <div className="space-y-1.5">
+                    <div className="font-mono text-[9px] text-text-dim uppercase tracking-wider">Key factors</div>
                     {result.analysis.keyFactors.map((f, i) => (
                       <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
                         <span className="text-accent mt-0.5">▸</span>{f}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Alt lines */}
+                {(result.analysis as any).altLines && (
+                  <div className="bg-surface border border-purple/10 rounded-lg p-3">
+                    <div className="font-mono text-[9px] text-purple uppercase tracking-wider mb-1">💡 Alt line suggestions</div>
+                    <p className="text-xs text-muted-foreground">{(result.analysis as any).altLines}</p>
                   </div>
                 )}
 
@@ -171,7 +195,7 @@ export function AnalyzerScreen({ onSendToLog }: Props) {
                   {result.analysis.riskNote}
                 </div>
                 {result.analysis.suggestedBooks?.length > 0 && (
-                  <div className="mt-2 flex gap-1.5 flex-wrap">
+                  <div className="flex gap-1.5 flex-wrap">
                     {result.analysis.suggestedBooks.map(b => (
                       <span key={b} className="font-mono text-[9px] px-2 py-0.5 rounded-full border border-accent/30 text-accent bg-accent/5">{b}</span>
                     ))}
@@ -216,4 +240,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function FormLabel({ children }: { children: React.ReactNode }) {
   return <label className="block font-mono text-[10px] text-text-dim uppercase tracking-[0.1em] mb-1">{children}</label>;
+}
+
+function AnalysisBlock({ icon, title, text, highlight }: { icon: string; title: string; text: string; highlight?: boolean }) {
+  return (
+    <div className={`${highlight ? 'bg-surface border border-primary/10' : 'bg-surface border border-border'} rounded-lg p-3`}>
+      <div className={`font-mono text-[9px] ${highlight ? 'text-green' : 'text-text-dim'} uppercase tracking-wider mb-1.5 flex items-center gap-1`}>
+        <span>{icon}</span> {title}
+      </div>
+      <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
+    </div>
+  );
 }
